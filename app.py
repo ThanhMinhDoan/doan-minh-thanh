@@ -65,7 +65,8 @@ st.markdown("""
 st.markdown("""
 <div class="student-info">
     <p><strong>Sinh viên:</strong> Đoàn Minh Thành</p>
-    <p><strong>MSSV:</strong> 223332848</p>
+    <p><strong>MSV:</strong> 223332848</p>
+    <p><strong>Lớp:</strong> Kỹ thuật robot và trí tuệ nhân tạo K63</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -165,4 +166,5 @@ st.markdown("""
     © 2026 Đoàn Minh Thành - 223332848
 </div>
 """, unsafe_allow_html=True)
+
 
