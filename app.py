@@ -194,38 +194,54 @@ if model is not None:
         
         if image_url:
             try:
-                response = requests.get(image_url, timeout=10)
+                # Thêm headers để tránh bị chặn
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Referer': image_url
+                }
+                response = requests.get(image_url, headers=headers, timeout=15, allow_redirects=True)
                 response.raise_for_status()
-                image = Image.open(BytesIO(response.content))
                 
-                col1, col2, col3 = st.columns([1, 2, 1])
-                with col2:
-                    st.image(image, caption="Ảnh từ URL", use_container_width=True)
-                
-                if st.button("Nhận dạng", type="primary", use_container_width=True, key="btn_url"):
-                    with st.spinner("Đang phân tích..."):
-                        prediction = predict(model, image)
-                        
-                        if prediction > 0.5:
-                            confidence = prediction * 100
-                            st.markdown(f"""
-                            <div class="result-box non-human">
-                                ❌ KHÔNG PHẢI NGƯỜI<br>
-                                <small>Độ tin cậy: {confidence:.1f}%</small>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        else:
-                            confidence = (1 - prediction) * 100
-                            st.markdown(f"""
-                            <div class="result-box human">
-                                ✅ LÀ NGƯỜI<br>
-                                <small>Độ tin cậy: {confidence:.1f}%</small>
-                            </div>
-                            """, unsafe_allow_html=True)
+                # Kiểm tra content type
+                content_type = response.headers.get('Content-Type', '')
+                if 'text/html' in content_type:
+                    st.error("URL không trỏ đến file ảnh trực tiếp. Vui lòng sử dụng link ảnh gốc (click chuột phải vào ảnh → Sao chép địa chỉ hình ảnh)")
+                else:
+                    image_data = BytesIO(response.content)
+                    image = Image.open(image_data)
+                    # Đảm bảo ảnh được load hoàn toàn
+                    image.load()
+                    
+                    col1, col2, col3 = st.columns([1, 2, 1])
+                    with col2:
+                        st.image(image, caption="Ảnh từ URL", use_container_width=True)
+                    
+                    if st.button("Nhận dạng", type="primary", use_container_width=True, key="btn_url"):
+                        with st.spinner("Đang phân tích..."):
+                            prediction = predict(model, image)
+                            
+                            if prediction > 0.5:
+                                confidence = prediction * 100
+                                st.markdown(f"""
+                                <div class="result-box non-human">
+                                    ❌ KHÔNG PHẢI NGƯỜI<br>
+                                    <small>Độ tin cậy: {confidence:.1f}%</small>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            else:
+                                confidence = (1 - prediction) * 100
+                                st.markdown(f"""
+                                <div class="result-box human">
+                                    ✅ LÀ NGƯỜI<br>
+                                    <small>Độ tin cậy: {confidence:.1f}%</small>
+                                </div>
+                                """, unsafe_allow_html=True)
             except requests.exceptions.RequestException as e:
                 st.error(f"Không thể tải ảnh từ URL: {e}")
             except Exception as e:
-                st.error(f"Lỗi khi xử lý ảnh: {e}")
+                st.error(f"Không thể xử lý ảnh. Hãy thử dùng link ảnh trực tiếp (kết thúc bằng .jpg, .png, .webp...)")
 else:
     st.warning("⚠️ Vui lòng đặt file `human_detection_model.h5` vào cùng thư mục với app.py")
     st.info("""
