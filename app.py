@@ -10,6 +10,8 @@ import tensorflow as tf
 from tensorflow import keras
 from PIL import Image
 import numpy as np
+import requests
+from io import BytesIO
 
 # Cấu hình trang
 st.set_page_config(
@@ -110,44 +112,120 @@ def predict(model, image):
 model = load_model()
 
 if model is not None:
-    # Upload ảnh
-    st.subheader("Tải ảnh lên để kiểm tra")
-    uploaded_file = st.file_uploader(
-        "Chọn một ảnh...",
-        type=['jpg', 'jpeg', 'png', 'bmp', 'webp'],
-        help="Hỗ trợ các định dạng: JPG, JPEG, PNG, BMP, WEBP"
-    )
+    # Tạo tabs cho các phương thức nhập ảnh
+    tab1, tab2, tab3 = st.tabs(["📁 Tải ảnh lên", "📷 Webcam", "🔗 URL ảnh"])
     
-    if uploaded_file is not None:
-        # Hiển thị ảnh
-        image = Image.open(uploaded_file)
+    image = None
+    
+    # Tab 1: Upload ảnh
+    with tab1:
+        st.subheader("Tải ảnh lên để kiểm tra")
+        uploaded_file = st.file_uploader(
+            "Chọn một ảnh...",
+            type=['jpg', 'jpeg', 'png', 'bmp', 'webp'],
+            help="Hỗ trợ các định dạng: JPG, JPEG, PNG, BMP, WEBP"
+        )
         
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.image(image, caption="Ảnh đã tải lên", use_container_width=True)
+        if uploaded_file is not None:
+            image = Image.open(uploaded_file)
+            
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.image(image, caption="Ảnh đã tải lên", use_container_width=True)
+            
+            if st.button("Nhận dạng", type="primary", use_container_width=True, key="btn_upload"):
+                with st.spinner("Đang phân tích..."):
+                    prediction = predict(model, image)
+                    
+                    if prediction > 0.5:
+                        confidence = prediction * 100
+                        st.markdown(f"""
+                        <div class="result-box non-human">
+                            ❌ KHÔNG PHẢI NGƯỜI<br>
+                            <small>Độ tin cậy: {confidence:.1f}%</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        confidence = (1 - prediction) * 100
+                        st.markdown(f"""
+                        <div class="result-box human">
+                            ✅ LÀ NGƯỜI<br>
+                            <small>Độ tin cậy: {confidence:.1f}%</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+    
+    # Tab 2: Webcam
+    with tab2:
+        st.subheader("Chụp ảnh từ Webcam")
+        camera_image = st.camera_input("Chụp ảnh từ webcam của bạn")
         
-        # Nút dự đoán
-        if st.button("Nhận dạng", type="primary", use_container_width=True):
-            with st.spinner("Đang phân tích..."):
-                prediction = predict(model, image)
+        if camera_image is not None:
+            image = Image.open(camera_image)
+            
+            if st.button("Nhận dạng", type="primary", use_container_width=True, key="btn_webcam"):
+                with st.spinner("Đang phân tích..."):
+                    prediction = predict(model, image)
+                    
+                    if prediction > 0.5:
+                        confidence = prediction * 100
+                        st.markdown(f"""
+                        <div class="result-box non-human">
+                            ❌ KHÔNG PHẢI NGƯỜI<br>
+                            <small>Độ tin cậy: {confidence:.1f}%</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        confidence = (1 - prediction) * 100
+                        st.markdown(f"""
+                        <div class="result-box human">
+                            ✅ LÀ NGƯỜI<br>
+                            <small>Độ tin cậy: {confidence:.1f}%</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+    
+    # Tab 3: URL ảnh
+    with tab3:
+        st.subheader("Nhập URL ảnh")
+        image_url = st.text_input(
+            "Nhập đường dẫn URL của ảnh:",
+            placeholder="https://example.com/image.jpg",
+            help="Dán đường link trực tiếp đến ảnh (JPG, PNG, WEBP...)"
+        )
+        
+        if image_url:
+            try:
+                response = requests.get(image_url, timeout=10)
+                response.raise_for_status()
+                image = Image.open(BytesIO(response.content))
                 
-                # Hiển thị kết quả
-                if prediction > 0.5:
-                    confidence = prediction * 100
-                    st.markdown(f"""
-                    <div class="result-box non-human">
-                        ❌ KHÔNG PHẢI NGƯỜI<br>
-                        <small>Độ tin cậy: {confidence:.1f}%</small>
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    confidence = (1 - prediction) * 100
-                    st.markdown(f"""
-                    <div class="result-box human">
-                        ✅ LÀ NGƯỜI<br>
-                        <small>Độ tin cậy: {confidence:.1f}%</small>
-                    </div>
-                    """, unsafe_allow_html=True)
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                    st.image(image, caption="Ảnh từ URL", use_container_width=True)
+                
+                if st.button("Nhận dạng", type="primary", use_container_width=True, key="btn_url"):
+                    with st.spinner("Đang phân tích..."):
+                        prediction = predict(model, image)
+                        
+                        if prediction > 0.5:
+                            confidence = prediction * 100
+                            st.markdown(f"""
+                            <div class="result-box non-human">
+                                ❌ KHÔNG PHẢI NGƯỜI<br>
+                                <small>Độ tin cậy: {confidence:.1f}%</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        else:
+                            confidence = (1 - prediction) * 100
+                            st.markdown(f"""
+                            <div class="result-box human">
+                                ✅ LÀ NGƯỜI<br>
+                                <small>Độ tin cậy: {confidence:.1f}%</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+            except requests.exceptions.RequestException as e:
+                st.error(f"Không thể tải ảnh từ URL: {e}")
+            except Exception as e:
+                st.error(f"Lỗi khi xử lý ảnh: {e}")
 else:
     st.warning("⚠️ Vui lòng đặt file `human_detection_model.h5` vào cùng thư mục với app.py")
     st.info("""
@@ -166,5 +244,3 @@ st.markdown("""
     © 2026 Đoàn Minh Thành - 223332848
 </div>
 """, unsafe_allow_html=True)
-
-
