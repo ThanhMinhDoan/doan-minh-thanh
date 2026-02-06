@@ -2,6 +2,7 @@
 Ứng dụng nhận dạng người vs không phải người
 Sinh viên: Đoàn Minh Thành
 MSSV: 223332848
+Lớp: Kỹ thuật Robot và trí tuệ nhân tạo K63
 """
 
 import streamlit as st
@@ -55,7 +56,7 @@ st.markdown("""
 # Header
 st.markdown("""
 <div class="main-header">
-    <h1>🔍 Nhận Dạng Người vs Không Phải Người</h1>
+    <h1>Nhận Dạng Người vs Không Phải Người</h1>
     <p>Sử dụng mô hình CNN</p>
 </div>
 """, unsafe_allow_html=True)
@@ -109,7 +110,7 @@ model = load_model()
 
 if model is not None:
     # Upload ảnh
-    st.subheader("📤 Tải ảnh lên để kiểm tra")
+    st.subheader("Tải ảnh lên để kiểm tra")
     uploaded_file = st.file_uploader(
         "Chọn một ảnh...",
         type=['jpg', 'jpeg', 'png', 'bmp', 'webp'],
@@ -125,7 +126,7 @@ if model is not None:
             st.image(image, caption="Ảnh đã tải lên", use_container_width=True)
         
         # Nút dự đoán
-        if st.button("🔍 Nhận dạng", type="primary", use_container_width=True):
+        if st.button("Nhận dạng", type="primary", use_container_width=True):
             with st.spinner("Đang phân tích..."):
                 prediction = predict(model, image)
                 
@@ -164,3 +165,4 @@ st.markdown("""
     © 2026 Đoàn Minh Thành - 223332848
 </div>
 """, unsafe_allow_html=True)
+
